@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS Pedido_Producto (
     PRIMARY KEY (pedido_id, producto_id)
 );
 
--- Tabla: Factura (versión ampliada)
+-- Tabla: Factura 
 CREATE TABLE IF NOT EXISTS Factura (
     id TEXT PRIMARY KEY,
     pedido_id TEXT UNIQUE REFERENCES Pedido(id),
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS Factura (
     fecha_pago TEXT
 );
 
--- Tabla: Transaccion (completa)
+-- Tabla: Transaccion 
 CREATE TABLE IF NOT EXISTS Transaccion (
     id TEXT PRIMARY KEY,
     monto REAL NOT NULL,
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS HistorialCambios (
     nuevo_stock INTEGER
 );
 
--- Índices recomendados
+-- 
 CREATE INDEX IF NOT EXISTS idx_factura_pedido ON Factura(pedido_id);
 CREATE INDEX IF NOT EXISTS idx_transaccion_factura ON Transaccion(factura_id);
 CREATE INDEX IF NOT EXISTS idx_pedido_cliente ON Pedido(cliente_id);
