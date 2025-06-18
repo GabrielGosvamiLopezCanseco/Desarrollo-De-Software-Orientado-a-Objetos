@@ -1,0 +1,122 @@
+-- ============================================
+-- BASE DE DATOS: Sistema de Pedidos y Facturación
+-- Compatible con PostgreSQL
+-- ============================================
+
+-- Tabla: Cliente
+CREATE TABLE Cliente (
+    id VARCHAR PRIMARY KEY,
+    nombre VARCHAR NOT NULL,
+    direccion TEXT
+);
+
+-- Tabla: Producto
+CREATE TABLE Producto (
+    id VARCHAR PRIMARY KEY,
+    nombre VARCHAR NOT NULL,
+    precio NUMERIC(10, 2) NOT NULL,
+    stock INTEGER NOT NULL,
+    estado VARCHAR(20) CHECK (estado IN ('ACTIVO', 'DESCONTINUADO', 'EN_PROMOCION', 'AGOTADO'))
+);
+
+-- Tabla: Pedido
+CREATE TABLE Pedido (
+    id VARCHAR PRIMARY KEY,
+    cliente_id VARCHAR REFERENCES Cliente(id),
+    fecha DATE NOT NULL,
+    estado VARCHAR(20) CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'EN_RUTA', 'ENTREGADO', 'CANCELADO'))
+);
+
+-- Tabla intermedia: Pedido_Producto (muchos a muchos)
+CREATE TABLE Pedido_Producto (
+    pedido_id VARCHAR REFERENCES Pedido(id) ON DELETE CASCADE,
+    producto_id VARCHAR REFERENCES Producto(id),
+    cantidad INTEGER NOT NULL,
+    PRIMARY KEY (pedido_id, producto_id)
+);
+
+-- Tabla: Factura
+CREATE TABLE Factura (
+    id VARCHAR PRIMARY KEY,
+    pedido_id VARCHAR REFERENCES Pedido(id) UNIQUE,
+    fecha_emision DATE NOT NULL,
+    total NUMERIC(10, 2) NOT NULL
+);
+
+-- Tabla: Vendedor
+CREATE TABLE Vendedor (
+    id VARCHAR PRIMARY KEY,
+    nombre VARCHAR NOT NULL
+);
+
+-- Tabla: Tienda (asumida por el método negociarConTienda)
+CREATE TABLE Tienda (
+    id VARCHAR PRIMARY KEY,
+    nombre VARCHAR NOT NULL
+);
+
+-- Tabla: Negociacion
+CREATE TABLE Negociacion (
+    id SERIAL PRIMARY KEY,
+    vendedor_id VARCHAR REFERENCES Vendedor(id),
+    tienda_id VARCHAR REFERENCES Tienda(id),
+    terminos JSON
+);
+
+-- Tabla: RutaEntrega
+CREATE TABLE RutaEntrega (
+    id SERIAL PRIMARY KEY,
+    vendedor_id VARCHAR REFERENCES Vendedor(id)
+    -- Campos adicionales podrían ser añadidos aquí
+);
+
+-- Tabla: RutaEntrega_Pedido (asociación entre rutas y pedidos)
+CREATE TABLE RutaEntrega_Pedido (
+    ruta_id INTEGER REFERENCES RutaEntrega(id),
+    pedido_id VARCHAR REFERENCES Pedido(id),
+    PRIMARY KEY (ruta_id, pedido_id)
+);
+
+-- Tabla: Inventario
+CREATE TABLE Inventario (
+    producto_id VARCHAR REFERENCES Producto(id),
+    sucursal_id VARCHAR,
+    cantidad INTEGER NOT NULL,
+    PRIMARY KEY (producto_id, sucursal_id)
+);
+
+-- Tabla: Administrador
+CREATE TABLE Administrador (
+    id VARCHAR PRIMARY KEY,
+    nombre VARCHAR NOT NULL,
+    email VARCHAR UNIQUE NOT NULL
+);
+
+-- Tabla: Proveedor
+CREATE TABLE Proveedor (
+    id VARCHAR PRIMARY KEY,
+    nombre VARCHAR NOT NULL
+);
+
+-- Tabla: Precio_Proveedor_Producto (vínculo proveedor-producto con precio)
+CREATE TABLE Precio_Proveedor_Producto (
+    proveedor_id VARCHAR REFERENCES Proveedor(id),
+    producto_id VARCHAR REFERENCES Producto(id),
+    precio NUMERIC(10, 2),
+    PRIMARY KEY (proveedor_id, producto_id)
+);
+
+-- Tabla: OrdenCompra
+CREATE TABLE OrdenCompra (
+    id VARCHAR PRIMARY KEY,
+    proveedor_id VARCHAR REFERENCES Proveedor(id),
+    estado VARCHAR(20)
+);
+CREATE TABLE HistorialCambios (
+    id SERIAL PRIMARY KEY,
+    producto_id VARCHAR REFERENCES Producto(id),
+    proveedor_id VARCHAR REFERENCES Proveedor(id),
+    fecha TIMESTAMP NOT NULL,
+    nuevo_precio NUMERIC(10,2),
+    nuevo_stock INTEGER
+);
