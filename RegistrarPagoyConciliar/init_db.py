@@ -54,15 +54,17 @@ def crear_base_datos():
         estado TEXT CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'EN_RUTA', 'ENTREGADO', 'CANCELADO'))
     );
 
-    -- Tabla Factura (depende de Pedido) - SIN la referencia UNIQUE temporalmente
+    -- Tabla Factura (depende de Pedido) - 
     CREATE TABLE IF NOT EXISTS Factura (
-        id TEXT PRIMARY KEY,
-        pedido_id TEXT,
-        fecha_emision TEXT NOT NULL,
-        total REAL NOT NULL,
-        cliente TEXT NOT NULL,
-        estado TEXT DEFAULT 'PENDIENTE',
-        fecha_pago TEXT
+    id TEXT PRIMARY KEY,
+    pedido_id TEXT,
+    fecha_emision TEXT NOT NULL,
+    total REAL NOT NULL,
+    saldo_pendiente REAL NOT NULL,
+    cliente TEXT NOT NULL,
+    estado TEXT DEFAULT 'PENDIENTE',
+    fecha_pago TEXT,
+    comprobante_pago TEXT
     );
 
     -- Tabla RutaEntrega (depende de Vendedor)
@@ -84,15 +86,18 @@ def crear_base_datos():
 
     -- Tabla Transaccion (depende de Factura)
     CREATE TABLE IF NOT EXISTS Transaccion (
-        id TEXT PRIMARY KEY,
-        monto REAL NOT NULL,
-        metodo_pago TEXT NOT NULL,
-        factura_id TEXT NOT NULL REFERENCES Factura(id),
-        fecha TEXT NOT NULL,
-        estado TEXT NOT NULL,
-        timestamp_inicio REAL,
-        timestamp_fin REAL
-    );
+    id TEXT PRIMARY KEY,
+    monto REAL NOT NULL,
+    metodo_pago TEXT NOT NULL,
+    factura_id TEXT NOT NULL REFERENCES Factura(id),
+    referencia_bancaria TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    estado TEXT NOT NULL,
+    fecha_conciliacion TEXT,
+    conciliado INTEGER DEFAULT 0,
+    timestamp_inicio REAL,
+    timestamp_fin REAL
+);
 
     -- Ahora que Factura existe, agregamos la restricción UNIQUE
     CREATE UNIQUE INDEX IF NOT EXISTS idx_factura_pedido ON Factura(pedido_id);
@@ -170,7 +175,9 @@ def crear_base_datos():
 
     conn.commit()
     conn.close()
-    print("✅ Base de datos creada exitosamente con todas las tablas")
+    print(" Base de datos creada exitosamente con todas las tablas")
 
 if __name__ == "__main__":
     crear_base_datos()
+    
+  
