@@ -54,11 +54,8 @@ def crear_base_datos():
         estado TEXT CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'EN_RUTA', 'ENTREGADO', 'CANCELADO'))
     );
 
-<<<<<<< HEAD
     -- Tabla Factura
-=======
-    -- Tabla Factura (depende de Pedido) - 
->>>>>>> ec2f7f364debaa92b4628ca35b361e22d4be2f1d
+
     CREATE TABLE IF NOT EXISTS Factura (
     id TEXT PRIMARY KEY,
     pedido_id TEXT,
@@ -212,11 +209,9 @@ def crear_base_datos():
 
     conn.commit()
     conn.close()
-<<<<<<< HEAD
-    print("✅ Base de datos creada exitosamente con todas las tablas y datos iniciales")
-=======
+
     print(" Base de datos creada exitosamente con todas las tablas")
->>>>>>> ec2f7f364debaa92b4628ca35b361e22d4be2f1d
+
 
 if __name__ == "__main__":
     crear_base_datos()

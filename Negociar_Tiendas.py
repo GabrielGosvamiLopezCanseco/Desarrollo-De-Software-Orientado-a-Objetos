@@ -150,7 +150,7 @@ class NegociacionApp:
             messagebox.showerror("Error", f"No se pudieron cargar los productos: {str(e)}")
 
     def registrar_negociacion(self):
-        """Registra una nueva negociación en la base de datos"""
+        """Registra una nueva negociación en la base de datos y actualiza el stock"""
         try:
             # Validar selecciones
             if not self.tienda_seleccionada.get():
@@ -168,53 +168,62 @@ class NegociacionApp:
 
             # Procesar productos seleccionados
             productos = []
-            for index in productos_seleccionados:
-                item = self.lista_productos.get(index)
-                partes = item.split(" - ")
-                
-                if len(partes) < 4:
-                    continue  # Saltar elementos mal formados
-                    
-                producto_id = partes[0]
-                stock = int(partes[3].split(": ")[1])
-                
-                cantidad = simpledialog.askinteger(
-                    "Cantidad",
-                    f"Ingrese cantidad para {partes[1]} (Stock: {stock}):",
-                    parent=self.root,
-                    minvalue=1,
-                    maxvalue=stock
-                )
-                
-                if not cantidad:  # Usuario canceló
-                    return
-                    
-                productos.append({
-                    "producto_id": producto_id,
-                    "nombre": partes[1],
-                    "precio": float(partes[2][1:]),  # Eliminar $
-                    "cantidad": cantidad,
-                    "stock_actual": stock
-                })
-
-            # Crear términos de negociación
-            terminos = {
-                "productos": productos,
-                "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "estado": "Pendiente"
-            }
-
-            # Insertar en la base de datos
             with sqlite3.connect(DB_PATH) as conn:
                 cursor = conn.cursor()
+                for index in productos_seleccionados:
+                    item = self.lista_productos.get(index)
+                    partes = item.split(" - ")
+                    
+                    if len(partes) < 4:
+                        continue  # Saltar elementos mal formados
+                        
+                    producto_id = partes[0]
+                    stock = int(partes[3].split(": ")[1])
+                    
+                    cantidad = simpledialog.askinteger(
+                        "Cantidad",
+                        f"Ingrese cantidad para {partes[1]} (Stock: {stock}):",
+                        parent=self.root,
+                        minvalue=1,
+                        maxvalue=stock
+                    )
+                    
+                    if not cantidad:  # Usuario canceló
+                        return
+                        
+                    # Agregar producto a la negociación
+                    productos.append({
+                        "producto_id": producto_id,
+                        "nombre": partes[1],
+                        "precio": float(partes[2][1:]),  # Eliminar $
+                        "cantidad": cantidad,
+                        "stock_actual": stock
+                    })
+
+                    # Actualizar el stock del producto
+                    nuevo_stock = stock - cantidad
+                    cursor.execute(
+                        "UPDATE Producto SET stock = ? WHERE id = ?",
+                        (nuevo_stock, producto_id)
+                    )
+
+                # Crear términos de negociación
+                terminos = {
+                    "productos": productos,
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "estado": "Pendiente"
+                }
+
+                # Insertar en la base de datos
                 cursor.execute(
                     "INSERT INTO Negociacion (vendedor_id, tienda_id, terminos) VALUES (?, ?, ?)",
                     (self.vendedor_seleccionado.get(), self.tienda_seleccionada.get(), json.dumps(terminos))
                 )
                 conn.commit()
 
-            messagebox.showinfo("Éxito", "Negociación registrada correctamente")
+            messagebox.showinfo("Éxito", "Negociación registrada correctamente y stock actualizado")
             self.lista_productos.selection_clear(0, tk.END)  # Limpiar selección
+            self.cargar_productos()  # Refrescar lista de productos
 
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo registrar la negociación: {str(e)}")
