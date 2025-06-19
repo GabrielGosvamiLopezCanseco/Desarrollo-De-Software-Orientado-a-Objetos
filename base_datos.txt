@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sqlb_project>
+  <db path="Base_datos.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/>
+  <attached/>
+  <window>
+    <main_tabs open="structure browser pragmas query" current="3"/>
+  </window>
+  <tab_structure>
+    <column_width id="0" width="300"/>
+    <column_width id="1" width="0"/>
+    <column_width id="2" width="100"/>
+    <column_width id="3" width="1753"/>
+    <column_width id="4" width="0"/>
+    <expanded_item id="0" parent="1"/>
+    <expanded_item id="1" parent="1"/>
+    <expanded_item id="2" parent="1"/>
+    <expanded_item id="3" parent="1"/>
+  </tab_structure>
+  <tab_browse>
+    <table title="Factura" custom_title="0" dock_id="1" table="4,13:main.Factura"/>
+    <dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000011300ffffff000000000000000000000004000000040000000800000008fc00000000"/>
+    <default_encoding codec=""/>
+    <browse_table_settings/>
+  </tab_browse>
+  <tab_sql>
+    <sql name="Esquema Completo"><![CDATA[
+-- ============================================
+-- BASE DE DATOS: Sistema de Pedidos y Facturación (SQLite)
+-- ============================================
+
+-- Tabla: Cliente
+CREATE TABLE IF NOT EXISTS Cliente (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    direccion TEXT
+);
+
+-- Tabla: Producto
+CREATE TABLE IF NOT EXISTS Producto (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    precio REAL NOT NULL,
+    stock INTEGER NOT NULL,
+    estado TEXT CHECK (estado IN ('ACTIVO', 'DESCONTINUADO', 'EN_PROMOCION', 'AGOTADO'))
+);
+
+-- Tabla: Pedido
+CREATE TABLE IF NOT EXISTS Pedido (
+    id TEXT PRIMARY KEY,
+    cliente_id TEXT REFERENCES Cliente(id),
+    fecha TEXT NOT NULL,
+    estado TEXT CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'EN_RUTA', 'ENTREGADO', 'CANCELADO'))
+);
+
+-- Tabla intermedia: Pedido_Producto
+CREATE TABLE IF NOT EXISTS Pedido_Producto (
+    pedido_id TEXT REFERENCES Pedido(id) ON DELETE CASCADE,
+    producto_id TEXT REFERENCES Producto(id),
+    cantidad INTEGER NOT NULL,
+    PRIMARY KEY (pedido_id, producto_id)
+);
+
+-- Tabla: Factura (versión ampliada)
+CREATE TABLE IF NOT EXISTS Factura (
+    id TEXT PRIMARY KEY,
+    pedido_id TEXT UNIQUE REFERENCES Pedido(id),
+    fecha_emision TEXT NOT NULL,
+    total REAL NOT NULL,
+    cliente TEXT NOT NULL,
+    estado TEXT DEFAULT 'pendiente',
+    fecha_pago TEXT
+);
+
+-- Tabla: Transaccion (completa)
+CREATE TABLE IF NOT EXISTS Transaccion (
+    id TEXT PRIMARY KEY,
+    monto REAL NOT NULL,
+    metodo_pago TEXT NOT NULL,
+    factura_id TEXT NOT NULL REFERENCES Factura(id),
+    fecha TEXT NOT NULL,
+    estado TEXT NOT NULL,
+    timestamp_inicio REAL,
+    timestamp_fin REAL
+);
+
+-- Tabla: Vendedor
+CREATE TABLE IF NOT EXISTS Vendedor (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL
+);
+
+-- Tabla: Tienda
+CREATE TABLE IF NOT EXISTS Tienda (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL
+);
+
+-- Tabla: Negociacion
+CREATE TABLE IF NOT EXISTS Negociacion (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vendedor_id TEXT REFERENCES Vendedor(id),
+    tienda_id TEXT REFERENCES Tienda(id),
+    terminos TEXT  -- JSON como string
+);
+
+-- Tabla: RutaEntrega
+CREATE TABLE IF NOT EXISTS RutaEntrega (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vendedor_id TEXT REFERENCES Vendedor(id)
+);
+
+-- Tabla: RutaEntrega_Pedido
+CREATE TABLE IF NOT EXISTS RutaEntrega_Pedido (
+    ruta_id INTEGER REFERENCES RutaEntrega(id),
+    pedido_id TEXT REFERENCES Pedido(id),
+    PRIMARY KEY (ruta_id, pedido_id)
+);
+
+-- Tabla: Inventario
+CREATE TABLE IF NOT EXISTS Inventario (
+    producto_id TEXT REFERENCES Producto(id),
+    sucursal_id TEXT,
+    cantidad INTEGER NOT NULL,
+    PRIMARY KEY (producto_id, sucursal_id)
+);
+
+-- Tabla: Administrador
+CREATE TABLE IF NOT EXISTS Administrador (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL
+);
+
+-- Tabla: Proveedor
+CREATE TABLE IF NOT EXISTS Proveedor (
+    id TEXT PRIMARY KEY,
+    nombre TEXT NOT NULL
+);
+
+-- Tabla: Precio_Proveedor_Producto
+CREATE TABLE IF NOT EXISTS Precio_Proveedor_Producto (
+    proveedor_id TEXT REFERENCES Proveedor(id),
+    producto_id TEXT REFERENCES Producto(id),
+    precio REAL,
+    PRIMARY KEY (proveedor_id, producto_id)
+);
+
+-- Tabla: OrdenCompra
+CREATE TABLE IF NOT EXISTS OrdenCompra (
+    id TEXT PRIMARY KEY,
+    proveedor_id TEXT REFERENCES Proveedor(id),
+    estado TEXT
+);
+
+-- Tabla: HistorialCambios
+CREATE TABLE IF NOT EXISTS HistorialCambios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    producto_id TEXT REFERENCES Producto(id),
+    proveedor_id TEXT REFERENCES Proveedor(id),
+    fecha TEXT NOT NULL,
+    nuevo_precio REAL,
+    nuevo_stock INTEGER
+);
+
+-- Índices recomendados
+CREATE INDEX IF NOT EXISTS idx_factura_pedido ON Factura(pedido_id);
+CREATE INDEX IF NOT EXISTS idx_transaccion_factura ON Transaccion(factura_id);
+CREATE INDEX IF NOT EXISTS idx_pedido_cliente ON Pedido(cliente_id);
+]]></sql>
+    <current_tab id="0"/>
+  </tab_sql>
+</sqlb_project>
+

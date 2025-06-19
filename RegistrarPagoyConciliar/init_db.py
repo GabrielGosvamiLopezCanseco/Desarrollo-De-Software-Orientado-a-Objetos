@@ -9,14 +9,14 @@ def crear_base_datos():
     cursor.executescript("""
     PRAGMA foreign_keys = ON;
 
-    -- Tabla Cliente (sin dependencias)
+    -- Tabla Cliente
     CREATE TABLE IF NOT EXISTS Cliente (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL,
         direccion TEXT
     );
 
-    -- Tabla Producto (sin dependencias)
+    -- Tabla Producto
     CREATE TABLE IF NOT EXISTS Producto (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL,
@@ -25,19 +25,19 @@ def crear_base_datos():
         estado TEXT CHECK (estado IN ('ACTIVO', 'DESCONTINUADO', 'EN_PROMOCION', 'AGOTADO'))
     );
 
-    -- Tabla Vendedor (sin dependencias)
+    -- Tabla Vendedor (versión simplificada)
     CREATE TABLE IF NOT EXISTS Vendedor (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL
     );
 
-    -- Tabla Tienda (sin dependencias)
+    -- Tabla Tienda (versión simplificada)
     CREATE TABLE IF NOT EXISTS Tienda (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL
     );
 
-    -- Tabla Proveedor (sin dependencias)
+    -- Tabla Proveedor
     CREATE TABLE IF NOT EXISTS Proveedor (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL
@@ -46,7 +46,7 @@ def crear_base_datos():
 
     # SEGUNDO: Tablas con dependencias simples
     cursor.executescript("""
-    -- Tabla Pedido (depende de Cliente)
+    -- Tabla Pedido
     CREATE TABLE IF NOT EXISTS Pedido (
         id TEXT PRIMARY KEY,
         cliente_id TEXT REFERENCES Cliente(id),
@@ -54,7 +54,7 @@ def crear_base_datos():
         estado TEXT CHECK (estado IN ('PENDIENTE', 'EN_PROCESO', 'EN_RUTA', 'ENTREGADO', 'CANCELADO'))
     );
 
-    -- Tabla Factura (depende de Pedido) - SIN la referencia UNIQUE temporalmente
+    -- Tabla Factura
     CREATE TABLE IF NOT EXISTS Factura (
         id TEXT PRIMARY KEY,
         pedido_id TEXT,
@@ -65,7 +65,7 @@ def crear_base_datos():
         fecha_pago TEXT
     );
 
-    -- Tabla RutaEntrega (depende de Vendedor)
+    -- Tabla RutaEntrega
     CREATE TABLE IF NOT EXISTS RutaEntrega (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vendedor_id TEXT REFERENCES Vendedor(id)
@@ -74,7 +74,7 @@ def crear_base_datos():
 
     # TERCERO: Tablas con múltiples dependencias
     cursor.executescript("""
-    -- Tabla Pedido_Producto (depende de Pedido y Producto)
+    -- Tabla Pedido_Producto
     CREATE TABLE IF NOT EXISTS Pedido_Producto (
         pedido_id TEXT REFERENCES Pedido(id) ON DELETE CASCADE,
         producto_id TEXT REFERENCES Producto(id),
@@ -82,7 +82,7 @@ def crear_base_datos():
         PRIMARY KEY (pedido_id, producto_id)
     );
 
-    -- Tabla Transaccion (depende de Factura)
+    -- Tabla Transaccion
     CREATE TABLE IF NOT EXISTS Transaccion (
         id TEXT PRIMARY KEY,
         monto REAL NOT NULL,
@@ -94,13 +94,13 @@ def crear_base_datos():
         timestamp_fin REAL
     );
 
-    -- Ahora que Factura existe, agregamos la restricción UNIQUE
+    -- Índice para Factura
     CREATE UNIQUE INDEX IF NOT EXISTS idx_factura_pedido ON Factura(pedido_id);
     """)
 
     # CUARTO: Tablas con relaciones complejas
     cursor.executescript("""
-    -- Tabla Negociacion (depende de Vendedor y Tienda)
+    -- Tabla Negociacion
     CREATE TABLE IF NOT EXISTS Negociacion (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vendedor_id TEXT REFERENCES Vendedor(id),
@@ -108,14 +108,14 @@ def crear_base_datos():
         terminos TEXT
     );
 
-    -- Tabla RutaEntrega_Pedido (depende de RutaEntrega y Pedido)
+    -- Tabla RutaEntrega_Pedido
     CREATE TABLE IF NOT EXISTS RutaEntrega_Pedido (
         ruta_id INTEGER REFERENCES RutaEntrega(id),
         pedido_id TEXT REFERENCES Pedido(id),
         PRIMARY KEY (ruta_id, pedido_id)
     );
 
-    -- Tabla Inventario (depende de Producto)
+    -- Tabla Inventario
     CREATE TABLE IF NOT EXISTS Inventario (
         producto_id TEXT REFERENCES Producto(id),
         sucursal_id TEXT,
@@ -123,14 +123,14 @@ def crear_base_datos():
         PRIMARY KEY (producto_id, sucursal_id)
     );
 
-    -- Tabla Administrador (sin dependencias)
+    -- Tabla Administrador
     CREATE TABLE IF NOT EXISTS Administrador (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL
     );
 
-    -- Tabla Precio_Proveedor_Producto (depende de Proveedor y Producto)
+    -- Tabla Precio_Proveedor_Producto
     CREATE TABLE IF NOT EXISTS Precio_Proveedor_Producto (
         proveedor_id TEXT REFERENCES Proveedor(id),
         producto_id TEXT REFERENCES Producto(id),
@@ -138,14 +138,14 @@ def crear_base_datos():
         PRIMARY KEY (proveedor_id, producto_id)
     );
 
-    -- Tabla OrdenCompra (depende de Proveedor)
+    -- Tabla OrdenCompra
     CREATE TABLE IF NOT EXISTS OrdenCompra (
         id TEXT PRIMARY KEY,
         proveedor_id TEXT REFERENCES Proveedor(id),
         estado TEXT
     );
 
-    -- Tabla HistorialCambios (depende de Producto y Proveedor)
+    -- Tabla HistorialCambios
     CREATE TABLE IF NOT EXISTS HistorialCambios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         producto_id TEXT REFERENCES Producto(id),
@@ -156,21 +156,54 @@ def crear_base_datos():
     );
     """)
 
-    # Datos iniciales de prueba
+    # DATOS INICIALES DE PRUEBA (versión simplificada)
     fecha_actual = datetime.now().strftime('%Y-%m-%d')
+
+    # Insertar tiendas (solo con id y nombre)
     cursor.executemany(
-        "INSERT OR IGNORE INTO Cliente (id, nombre) VALUES (?, ?)",
-        [('CLI-001', 'Juan Pérez'), ('CLI-002', 'María García')]
+        "INSERT OR IGNORE INTO Tienda (id, nombre) VALUES (?, ?)",
+        [
+            ('TND-001', 'Tienda Central'),
+            ('TND-002', 'Tienda Norte'),
+            ('TND-003', 'Tienda Sur')
+        ]
+    )
+
+    # Insertar vendedores (solo con id y nombre)
+    cursor.executemany(
+        "INSERT OR IGNORE INTO Vendedor (id, nombre) VALUES (?, ?)",
+        [
+            ('VND-001', 'Carlos Mendoza'),
+            ('VND-002', 'Ana López'),
+            ('VND-003', 'Pedro Ramírez')
+        ]
+    )
+
+    # Insertar clientes
+    cursor.executemany(
+        "INSERT OR IGNORE INTO Cliente (id, nombre, direccion) VALUES (?, ?, ?)",
+        [
+            ('CLI-001', 'Juan Pérez', 'Calle Falsa 123'),
+            ('CLI-002', 'María García', 'Av. Siempre Viva 456'),
+            ('CLI-003', 'Roberto Sánchez', 'Boulevard Los Olivos 789')
+        ]
     )
     
-    cursor.execute(
+    # Insertar productos
+    cursor.executemany(
         "INSERT OR IGNORE INTO Producto (id, nombre, precio, stock, estado) VALUES (?, ?, ?, ?, ?)",
-        ('PROD-001', 'Laptop Gamer', 15000.50, 10, 'ACTIVO')
+        [
+            ('PROD-001', 'Laptop Gamer', 15000.50, 10, 'ACTIVO'),
+            ('PROD-002', 'Monitor 24"', 3500.00, 15, 'ACTIVO'),
+            ('PROD-003', 'Teclado Mecánico', 1200.00, 20, 'ACTIVO'),
+            ('PROD-004', 'Mouse Inalámbrico', 600.00, 30, 'ACTIVO'),
+            ('PROD-005', 'Impresora Multifuncional', 4200.00, 5, 'ACTIVO')
+        ]
     )
 
     conn.commit()
     conn.close()
-    print("✅ Base de datos creada exitosamente con todas las tablas")
+    print("✅ Base de datos creada exitosamente con todas las tablas y datos iniciales")
 
 if __name__ == "__main__":
     crear_base_datos()
